@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Clarity — Website Messaging Analyzer</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #0e0e0f;
+  --surface: #161618;
+  --surface2: #1e1e21;
+  --border: #2a2a2e;
+  --border2: #38383d;
+  --cream: #f0ead8;
+  --cream-dim: #a09b8c;
+  --cream-muted: #5a5750;
+  --accent: #c8f542;
+  --accent-dim: #98c014;
+  --red: #f05252;
+  --amber: #f0a832;
+  --teal: #34d4a0;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--cream);
+  font-family: 'Instrument Sans', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  background-size: 200px;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: .6;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.85); }
+}
+
+@keyframes scanLine {
+  0%   { left: -100%; }
+  100% { left: 100%; }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+/* ── Header ── */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 40px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: rgba(14,14,15,.92);
+  backdrop-filter: blur(12px);
+  z-index: 100;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'DM Mono', monospace;
+  font-size: 15px;
+  letter-spacing: 0.06em;
+  color: var(--cream);
+  text-decoration: none;
+}
+
+.logo-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--accent);
+  border-radius: 50%;
+  animation: pulse 2.5s ease-in-out infinite;
+}
+
+.claude-badge {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--cream-muted);
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+/* ── API Key Banner ── */
+.apikey-wrap {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 40px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  color: var(--cream-dim);
+}
+
+.apikey-wrap label { color: var(--cream-muted); letter-spacing: 0.06em; white-space: nowrap; }
+
+.apikey-input {
+  flex: 1;
+  max-width: 400px;
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  padding: 7px 12px;
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  color: var(--cream);
+  outline: none;
+  transition: border-color .2s;
+}
+.apikey-input::placeholder { color: var(--cream-muted); }
+.apikey-input:focus { border-color: var(--accent); }
+
+.apikey-save {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  padding: 7px 14px;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--cream-dim);
+  cursor: pointer;
+  transition: all .2s;
+  letter-spacing: 0.06em;
+}
+.apikey-save:hover { border-color: var(--accent); color: var(--accent); }
+
+.apikey-hint {
+  color: var(--cream-muted);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+.apikey-hint a {
+  color: var(--cream-muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ── Main ── */
+main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 80px 40px 120px;
+}
+
+/* ── Hero ── */
+.hero {
+  margin-bottom: 52px;
+  animation: fadeUp .6s cubic-bezier(.16,1,.3,1) both;
+}
+
+.hero-eyebrow {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--cream-muted);
+  text-transform: uppercase;
+  margin-bottom: 18px;
+}
+
+.hero h1 {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(36px, 6vw, 58px);
+  line-height: 1.08;
+  color: var(--cream);
+  font-weight: 400;
+  margin-bottom: 16px;
+}
+
+.hero h1 em {
+  font-style: italic;
+  color: var(--cream-dim);
+}
+
+.hero-sub {
+  font-size: 16px;
+  color: var(--cream-dim);
+  line-height: 1.6;
+  max-width: 520px;
+  font-weight: 400;
+}
+
+/* ── Input ── */
+.input-wrap {
+  margin-bottom: 20px;
+  animation: fadeUp .7s cubic-bezier(.16,1,.3,1) both;
+}
+
+.input-row {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.url-input {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  padding: 14px 18px;
+  font-family: 'DM Mono', monospace;
+  font-size: 14px;
+  color: var(--cream);
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+
+.url-input::placeholder { color: var(--cream-muted); }
+
+.url-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(200,245,66,.07);
+}
+
+.analyze-btn {
+  background: var(--cream);
+  color: var(--bg);
+  border: none;
+  border-radius: 10px;
+  padding: 14px 24px;
+  font-family: 'Instrument Sans', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all .2s cubic-bezier(.16,1,.3,1);
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+}
+
+.analyze-btn:hover {
+  background: var(--accent);
+  transform: translateY(-1px);
+}
+
+.analyze-btn:active { transform: translateY(0); }
+.analyze-btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+
+/* ── Chips ── */
+.chips-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  animation: fadeUp .8s cubic-bezier(.16,1,.3,1) both;
+}
+
+.chip-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--cream-muted);
+  letter-spacing: 0.08em;
+  display: flex;
+  align-items: center;
+  margin-right: 4px;
+}
+
+.chip {
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  color: var(--cream-dim);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: all .2s;
+  letter-spacing: 0.04em;
+}
+
+.chip:hover {
+  border-color: var(--border2);
+  color: var(--cream);
+  background: var(--surface2);
+}
+
+/* ── Error ── */
+#error {
+  display: none;
+  background: rgba(240,82,82,.08);
+  border: 1px solid rgba(240,82,82,.25);
+  border-radius: 10px;
+  padding: 14px 18px;
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  color: var(--red);
+  margin-top: 28px;
+  letter-spacing: 0.03em;
+}
+
+/* ── Loading ── */
+#loading {
+  display: none;
+  margin-top: 48px;
+  padding: 28px 0;
+}
+
+.loading-url {
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  color: var(--cream-muted);
+  letter-spacing: 0.06em;
+  margin-bottom: 20px;
+}
+
+.scan-wrap {
+  position: relative;
+  height: 2px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 32px;
+}
+
+.scan-wrap::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  animation: scanLine 1.4s cubic-bezier(.4,0,.6,1) infinite;
+}
+
+.steps { display: flex; flex-direction: column; gap: 14px; }
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  color: var(--cream-muted);
+  letter-spacing: 0.04em;
+  transition: color .3s;
+}
+
+.step-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--border2);
+  flex-shrink: 0;
+  transition: background .3s;
+}
+
+.step.active { color: var(--cream-dim); }
+.step.active .step-dot { background: var(--accent); animation: pulse 1.2s ease-in-out infinite; }
+.step.done { color: var(--cream-dim); }
+.step.done .step-dot { background: var(--teal); animation: none; }
+
+/* ── Result ── */
+#result {
+  display: none;
+  margin-top: 48px;
+}
+
+.score-section {
+  display: flex;
+  align-items: flex-start;
+  gap: 32px;
+  margin-bottom: 40px;
+}
+
+.ring-wrap { flex-shrink: 0; }
+
+.ring-bg { fill: none; stroke: var(--border); stroke-width: 5; }
+.ring-track {
+  fill: none;
+  stroke: var(--teal);
+  stroke-width: 5;
+  stroke-linecap: round;
+  transform-origin: 60px 60px;
+  transform: rotate(-90deg);
+  transition: stroke-dashoffset 1s cubic-bezier(.16,1,.3,1), stroke .4s;
+}
+
+svg { overflow: visible; }
+
+.score-info { padding-top: 6px; }
+
+.score-number {
+  font-family: 'DM Mono', monospace;
+  font-size: 48px;
+  font-weight: 500;
+  color: var(--cream);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.score-number span {
+  font-size: 22px;
+  color: var(--cream-muted);
+}
+
+.score-verdict {
+  font-family: 'DM Serif Display', serif;
+  font-size: 22px;
+  color: var(--cream);
+  line-height: 1.2;
+  margin-bottom: 10px;
+}
+
+.score-verdict em { font-style: italic; color: var(--cream-dim); }
+
+.score-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid;
+  margin-bottom: 14px;
+}
+
+.score-badge.teal { color: var(--teal); border-color: rgba(52,212,160,.3); background: rgba(52,212,160,.07); }
+.score-badge.amber { color: var(--amber); border-color: rgba(240,168,50,.3); background: rgba(240,168,50,.07); }
+.score-badge.red { color: var(--red); border-color: rgba(240,82,82,.3); background: rgba(240,82,82,.07); }
+
+.score-rationale {
+  font-size: 14px;
+  color: var(--cream-dim);
+  line-height: 1.6;
+  max-width: 400px;
+}
+
+/* ── Divider ── */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 36px 0 24px;
+}
+
+.divider-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--cream-muted);
+  white-space: nowrap;
+}
+
+.divider-line {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ── Summary card ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px 28px;
+}
+
+.card-summary {
+  font-family: 'DM Serif Display', serif;
+  font-size: 20px;
+  line-height: 1.45;
+  color: var(--cream);
+  font-weight: 400;
+}
+
+/* ── Suggestions ── */
+.suggestions-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.suggestion-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  padding: 22px 28px;
+  transition: background .2s;
+  cursor: default;
+}
+
+.suggestion-item:not(:last-child) {
+  border-bottom: 1px solid var(--border);
+}
+
+.suggestion-item:hover { background: var(--surface2); }
+
+.suggestion-num {
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  color: var(--accent);
+  font-weight: 500;
+  flex-shrink: 0;
+  padding-top: 2px;
+  letter-spacing: 0.04em;
+}
+
+.suggestion-text {
+  font-size: 14px;
+  color: var(--cream-dim);
+  line-height: 1.65;
+}
+
+/* ── Footer ── */
+footer {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(14,14,15,.95);
+  border-top: 1px solid var(--border);
+  backdrop-filter: blur(12px);
+  padding: 14px 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--cream-muted);
+}
+
+footer .footer-left { color: var(--cream-muted); }
+footer .footer-right { color: var(--cream-dim); }
+
+/* Responsive */
+@media (max-width: 600px) {
+  header { padding: 16px 20px; }
+  main { padding: 48px 20px 100px; }
+  .apikey-wrap { padding: 12px 20px; flex-wrap: wrap; }
+  .score-section { flex-direction: column; gap: 20px; }
+  footer { padding: 14px 20px; display: none; }
+  .input-row { flex-direction: column; }
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <div class="logo">
+    <div class="logo-dot"></div>
+    CLARITY
+  </div>
+  <div class="claude-badge">Powered by Claude</div>
+</header>
+
+<!-- API Key -->
+<div class="apikey-wrap" id="apiKeyBanner">
+  <label>API KEY</label>
+  <input class="apikey-input" id="apiKeyInput" type="password" placeholder="sk-ant-…  (stored locally, never sent anywhere else)"/>
+  <button class="apikey-save" onclick="saveKey()">Save</button>
+  <span class="apikey-hint">Get yours at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a></span>
+</div>
+
+<!-- Main -->
+<main>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-eyebrow">Website Messaging Analyzer</div>
+    <h1>Does your site say<br/><em>what it actually does?</em></h1>
+    <p class="hero-sub">Paste any URL. Claude reads your homepage copy and scores how clearly it communicates to a first-time visitor — no guessing, no generic advice.</p>
+  </section>
+
+  <!-- Input -->
+  <div class="input-wrap">
+    <div class="input-row">
+      <input
+        class="url-input"
+        id="urlInput"
+        type="url"
+        placeholder="https://yoursite.com"
+        autocomplete="off"
+        spellcheck="false"
+      />
+      <button class="analyze-btn" id="analyzeBtn" onclick="runAnalysis()">Analyze →</button>
+    </div>
+  </div>
+
+  <!-- Chips -->
+  <div class="chips-row">
+    <span class="chip-label">Try:</span>
+    <button class="chip" onclick="setUrl('https://stripe.com')">stripe.com</button>
+    <button class="chip" onclick="setUrl('https://notion.so')">notion.so</button>
+    <button class="chip" onclick="setUrl('https://linear.app')">linear.app</button>
+    <button class="chip" onclick="setUrl('https://vercel.com')">vercel.com</button>
+    <button class="chip" onclick="setUrl('https://figma.com')">figma.com</button>
+  </div>
+
+  <!-- Error -->
+  <div id="error"></div>
+
+  <!-- Loading -->
+  <div id="loading">
+    <div class="loading-url" id="loadingUrl"></div>
+    <div class="scan-wrap"></div>
+    <div class="steps">
+      <div class="step" id="step1"><div class="step-dot"></div>Fetching page content</div>
+      <div class="step" id="step2"><div class="step-dot"></div>Extracting visible text</div>
+      <div class="step" id="step3"><div class="step-dot"></div>Scoring clarity</div>
+      <div class="step" id="step4"><div class="step-dot"></div>Writing suggestions</div>
+    </div>
+  </div>
+
+  <!-- Result -->
+  <div id="result">
+
+    <div class="score-section">
+      <div class="ring-wrap">
+        <svg width="120" height="120" viewBox="0 0 120 120">
+          <circle class="ring-bg" cx="60" cy="60" r="54"/>
+          <circle class="ring-track" id="ring" cx="60" cy="60" r="54"/>
+        </svg>
+      </div>
+      <div class="score-info">
+        <div class="score-number" id="scoreNum">—<span>/10</span></div>
+        <div class="score-verdict" id="scoreVerdict"></div>
+        <div class="score-badge" id="scoreBadge"></div>
+        <div class="score-rationale" id="scoreRationale"></div>
+      </div>
+    </div>
+
+    <div class="divider">
+      <div class="divider-label">What this business does</div>
+      <div class="divider-line"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-summary" id="summaryText"></div>
+    </div>
+
+    <div class="divider">
+      <div class="divider-label">How to improve</div>
+      <div class="divider-line"></div>
+    </div>
+
+    <div class="suggestions-card" id="suggestionsCard"></div>
+
+  </div>
+
+</main>
+
+<!-- Footer -->
+<footer id="footer">
+  <div class="footer-left">clarity — website messaging analyzer</div>
+  <div class="footer-right" id="footerDomain"></div>
+</footer>
+
+<script>
+// ── API Key management ──
+const KEY_STORAGE = 'clarity_api_key';
+
+function loadKey() {
+  const k = localStorage.getItem(KEY_STORAGE) || '';
+  document.getElementById('apiKeyInput').value = k;
+  if (k) document.getElementById('apiKeyBanner').style.background = 'rgba(22,22,24,0.6)';
+}
+
+function saveKey() {
+  const k = document.getElementById('apiKeyInput').value.trim();
+  localStorage.setItem(KEY_STORAGE, k);
+  const btn = document.querySelector('.apikey-save');
+  btn.textContent = 'Saved ✓';
+  btn.style.color = 'var(--teal)';
+  btn.style.borderColor = 'var(--teal)';
+  setTimeout(() => { btn.textContent = 'Save'; btn.style.color = ''; btn.style.borderColor = ''; }, 2000);
+}
+
+function getKey() { return localStorage.getItem(KEY_STORAGE) || ''; }
+
+loadKey();
+
+// ── URL chip helpers ──
+function setUrl(url) {
+  document.getElementById('urlInput').value = url;
+  document.getElementById('urlInput').focus();
+}
+
+// ── Step helpers ──
+function setStep(n, state) {
+  const el = document.getElementById('step' + n);
+  el.className = 'step ' + state;
+}
+
+function resetSteps() {
+  [1,2,3,4].forEach(n => setStep(n, ''));
+}
+
+async function advanceSteps(durations) {
+  for (let i = 0; i < durations.length; i++) {
+    setStep(i + 1, 'active');
+    await sleep(durations[i]);
+    setStep(i + 1, 'done');
+  }
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ── CORS proxy + text extraction ──
+async function fetchSite(url) {
+  const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+  try {
+    const r = await fetch(proxy, { signal: AbortSignal.timeout(10000) });
+    const d = await r.json();
+    return d.contents || '';
+  } catch { return ''; }
+}
+
+function extractText(html) {
+  if (!html) return '';
+  const d = document.createElement('div');
+  d.innerHTML = html;
+  ['script','style','nav','footer','noscript','header','svg','img'].forEach(tag =>
+    d.querySelectorAll(tag).forEach(el => el.remove())
+  );
+  return (d.innerText || d.textContent || '')
+    .replace(/\s+/g, ' ').trim().slice(0, 3000);
+}
+
+// ── Claude prompt ──
+function buildPrompt(hostname, pageText) {
+  const textBlock = pageText
+    ? `Here is the extracted homepage text:\n\n---\n${pageText}\n---`
+    : `The page content could not be fetched. If you recognize this domain from your training data, use your knowledge of the site. Otherwise, analyze based on the domain name alone and note this in your rationale.`;
+
+  return `You are an expert messaging strategist who has reviewed thousands of SaaS, startup, and product websites. Your job is to evaluate how clearly a website communicates its value to a first-time visitor who knows nothing about the company.
+
+Analyze the website: ${hostname}
+
+${textBlock}
+
+Evaluate this website across five dimensions:
+1. VALUE PROPOSITION — Is there a clear, specific statement of what the product/service does?
+2. TARGET AUDIENCE — Is it immediately obvious who this is built for?
+3. OUTCOME CLARITY — Does the copy describe what users achieve, not just what the product does?
+4. JARGON & BUZZWORDS — Is the language plain and concrete, or vague and buzzword-heavy?
+5. CALL TO ACTION — Is the desired next step obvious and compelling?
+
+Return ONLY a valid JSON object. No markdown, no backticks, no preamble, no commentary outside the JSON object. Use this exact schema:
+
+{
+  "summary": "1–2 sentence plain English description of what this business does and who it serves. Write as if explaining to a smart friend who has never heard of the company.",
+  "score": <integer from 1 to 10>,
+  "rationale": "One specific sentence citing the single biggest factor that determined this score — mention actual copy or specific missing element.",
+  "suggestions": [
+    "Suggestion 1: Start with the specific problem, then the fix. E.g. 'Your hero headline says X — replace it with something that names the outcome, like Y.'",
+    "Suggestion 2: Be concrete. Reference what is or isn't on the page. Do not give generic advice like 'add social proof' — say what kind and where.",
+    "Suggestion 3: Same standard — specific, implementable, references actual page content or gap."
+  ]
+}
+
+Scoring rubric (apply strictly):
+10 — Flawless: visitor knows in 5 seconds exactly what it does, who it's for, and why it's better
+9  — Near-perfect: crystal clear on all five dimensions, trivial polish needed
+8  — Strong: clear value prop and audience, outcome implied but not explicit, minimal jargon
+7  — Good: mostly clear, one dimension is noticeably weak or missing
+6  — Adequate: the core idea is there but requires effort; jargon or vagueness slows comprehension
+5  — Mediocre: visitor has to think hard; audience or outcome is unclear; buzzwords present
+4  — Weak: it's vague on what they do OR who it's for; value is buried or absent
+3  — Poor: hard to tell what the business does without prior knowledge
+2  — Very poor: generic, could apply to any company in the sector; no differentiation
+1  — Completely unclear: indecipherable to a first-time visitor
+
+Bias toward accuracy over flattery. A polished-looking site with vague copy should score 5–6, not 8. Do not inflate scores because the design is attractive.`;
+}
+
+// ── Score helpers ──
+function scoreColor(s) {
+  if (s >= 8) return 'var(--teal)';
+  if (s >= 6) return 'var(--amber)';
+  return 'var(--red)';
+}
+
+function scoreBadgeClass(s) {
+  if (s >= 8) return 'teal';
+  if (s >= 6) return 'amber';
+  return 'red';
+}
+
+function scoreBadgeText(s) {
+  if (s >= 8) return '● Clear';
+  if (s >= 6) return '● Adequate';
+  return '● Unclear';
+}
+
+function scoreVerdict(s) {
+  if (s >= 9) return '<em>Exceptionally</em> clear';
+  if (s >= 8) return 'Very clear messaging';
+  if (s >= 7) return 'Mostly clear,<br/><em>minor gaps</em>';
+  if (s >= 6) return 'Moderate clarity';
+  if (s >= 4) return 'Needs <em>significant</em> work';
+  return '<em>Unclear</em> messaging';
+}
+
+// ── Render result ──
+function renderResult(parsed, score, hostname) {
+  const circ = 339.29;
+  const ring = document.getElementById('ring');
+  ring.style.strokeDasharray = circ;
+  ring.style.strokeDashoffset = circ;
+  ring.style.stroke = scoreColor(score);
+
+  document.getElementById('scoreNum').innerHTML = `${score}<span>/10</span>`;
+  document.getElementById('scoreVerdict').innerHTML = scoreVerdict(score);
+
+  const badge = document.getElementById('scoreBadge');
+  badge.textContent = scoreBadgeText(score);
+  badge.className = 'score-badge ' + scoreBadgeClass(score);
+
+  document.getElementById('scoreRationale').textContent = parsed.rationale || '';
+  document.getElementById('summaryText').textContent = parsed.summary || '';
+
+  const nums = ['01', '02', '03'];
+  const suggs = (parsed.suggestions || []).slice(0, 3);
+  document.getElementById('suggestionsCard').innerHTML = suggs.map((s, i) => `
+    <div class="suggestion-item">
+      <div class="suggestion-num">${nums[i]}</div>
+      <div class="suggestion-text">${s}</div>
+    </div>
+  `).join('');
+
+  document.getElementById('footerDomain').textContent = hostname;
+
+  document.getElementById('result').style.display = 'block';
+  document.getElementById('result').style.animation = 'fadeUp .5s cubic-bezier(.16,1,.3,1) both';
+
+  const footer = document.getElementById('footer');
+  footer.style.display = 'flex';
+
+  setTimeout(() => {
+    ring.style.strokeDashoffset = circ - (score / 10) * circ;
+  }, 80);
+}
+
+// ── Main analysis flow ──
+async function runAnalysis() {
+  const rawUrl = document.getElementById('urlInput').value.trim();
+  const apiKey = getKey();
+
+  const errorEl = document.getElementById('error');
+  errorEl.style.display = 'none';
+  errorEl.textContent = '';
+
+  document.getElementById('result').style.display = 'none';
+  document.getElementById('footer').style.display = 'none';
+
+  // Validate URL
+  if (!rawUrl) {
+    showError('Please enter a URL to analyze.');
+    return;
+  }
+
+  let url = rawUrl;
+  if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+
+  let hostname;
+  try {
+    hostname = new URL(url).hostname;
+  } catch {
+    showError('That doesn\'t look like a valid URL. Try: https://example.com');
+    return;
+  }
+
+  if (!apiKey) {
+    showError('Enter your Anthropic API key above to get started. Get one at console.anthropic.com →');
+    return;
+  }
+
+  // UI: start loading
+  const btn = document.getElementById('analyzeBtn');
+  btn.disabled = true;
+  btn.textContent = 'Analyzing…';
+
+  const loading = document.getElementById('loading');
+  loading.style.display = 'block';
+  document.getElementById('loadingUrl').textContent = hostname;
+  resetSteps();
+
+  try {
+    // Step 1: Fetch
+    setStep(1, 'active');
+    const [html] = await Promise.all([
+      fetchSite(url),
+      sleep(700)
+    ]);
+    setStep(1, 'done');
+
+    // Step 2: Extract
+    setStep(2, 'active');
+    const pageText = extractText(html);
+    await sleep(500);
+    setStep(2, 'done');
+
+    // Step 3 & 4: Claude
+    setStep(3, 'active');
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-allow-browser': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: buildPrompt(hostname, pageText) }]
+      })
+    });
+
+    setStep(3, 'done');
+    setStep(4, 'active');
+
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      const msg = errData?.error?.message || `API error ${response.status}`;
+      throw new Error(msg);
+    }
+
+    const data = await response.json();
+    const raw = (data.content || []).map(b => b.text || '').join('');
+    const clean = raw.replace(/```json|```/g, '').trim();
+
+    let parsed;
+    try {
+      parsed = JSON.parse(clean);
+    } catch {
+      // Try to extract JSON from the response
+      const match = clean.match(/\{[\s\S]*\}/);
+      if (match) parsed = JSON.parse(match[0]);
+      else throw new Error('Could not parse Claude\'s response as JSON.');
+    }
+
+    const score = Math.min(10, Math.max(1, Math.round(parsed.score)));
+    await sleep(400);
+    setStep(4, 'done');
+
+    await sleep(300);
+    loading.style.display = 'none';
+    renderResult(parsed, score, hostname);
+
+  } catch (err) {
+    loading.style.display = 'none';
+    showError('Error: ' + (err.message || 'Something went wrong. Check your API key and try again.'));
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Analyze →';
+  }
+}
+
+function showError(msg) {
+  const el = document.getElementById('error');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+// Enter key on URL input
+document.getElementById('urlInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') runAnalysis();
+});
+
+// Enter key on API key input
+document.getElementById('apiKeyInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') saveKey();
+});
+</script>
+</body>
+</html>
